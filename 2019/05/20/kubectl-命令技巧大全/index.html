@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta name="generator" content="Hexo 3.8.0"><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Willie Lin"><link rel="alternative" href="/atom.xml" title="Willie Lin" type="application/atom+xml"><link rel="icon" href="/favicon.png"><title>kubectl-命令技巧大全 - Willie Lin</title><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/js/fancybox/jquery.fancybox.min.css"><!--[if lt IE 9]><script>(function(a,b){a="abbr article aside audio bdi canvas data datalist details dialog figcaption figure footer header hgroup main mark meter nav output progress section summary template time video".split(" ");for(b=a.length-1;b>=0;b--)document.createElement(a[b])})()</script><![endif]--><script src="/js/jquery-3.1.1.min.js"></script><script src="/js/fancybox/jquery.fancybox.min.js"></script></head><body style="opacity:0"><header class="head"><h1 class="head-title u-fl"><a href="/">Willie Lin</a></h1><nav class="head-nav u-fr"><ul class="head-nav__list"><li class="head-nav__item"><a class="head-nav__link" href="/archives">カタログ/（目录）</a></li></ul></nav></header><main class="main"><article class="post"><header class="post__head"><time class="post__time" datetime="2019-05-20T15:52:39.000Z">2019 - 05 - 20 23:52:39</time><h1 class="post__title"><a href="/2019/05/20/kubectl-命令技巧大全/">kubectl-命令技巧大全</a></h1><div class="post__main echo"><h2 id="kubectl-命令技巧大全"><a href="#kubectl-命令技巧大全" class="headerlink" title="kubectl 命令技巧大全"></a>kubectl 命令技巧大全</h2><p>Kubctl 命令是操作 kubernetes 集群的最直接和最 skillful 的途径，这个60多MB大小的二进制文件，到底有啥能耐呢？请看下文：</p>
+<h4 id="Kubectl-自动补全"><a href="#Kubectl-自动补全" class="headerlink" title="Kubectl 自动补全"></a>Kubectl 自动补全</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">source</span> &lt;(kubectl completion bash) <span class="comment"># setup autocomplete in bash, bash-completion package should be installed first.</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">source</span> &lt;(kubectl completion zsh)  <span class="comment"># setup autocomplete in zsh</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="Kubectl-上下文和配置"><a href="#Kubectl-上下文和配置" class="headerlink" title="Kubectl 上下文和配置"></a>Kubectl 上下文和配置</h3><p>设置 kubectl 命令交互的 kubernetes 集群并修改配置信息。</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl<span class="built_in"> config </span>view # 显示合并后的 kubeconfig 配置</span><br><span class="line"></span><br><span class="line"><span class="comment"># 同时使用多个 kubeconfig 文件并查看合并后的配置</span></span><br><span class="line">$ <span class="attribute">KUBECONFIG</span>=~/.kube/config:~/.kube/kubconfig2 kubectl<span class="built_in"> config </span>view</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取 e2e 用户的密码</span></span><br><span class="line">$ kubectl<span class="built_in"> config </span>view -o <span class="attribute">jsonpath</span>=<span class="string">'&#123;.users[?(@.name == "e2e")].user.password&#125;'</span></span><br><span class="line"></span><br><span class="line">$ kubectl<span class="built_in"> config </span>current-context              # 显示当前的上下文</span><br><span class="line">$ kubectl<span class="built_in"> config </span>use-context my-cluster-name  # 设置默认上下文为 my-cluster-name</span><br><span class="line"></span><br><span class="line"><span class="comment"># 向 kubeconf 中增加支持基本认证的新集群</span></span><br><span class="line">$ kubectl<span class="built_in"> config </span>set-credentials kubeuser/foo.kubernetes.com <span class="attribute">--username</span>=kubeuser <span class="attribute">--password</span>=kubepassword</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用指定的用户名和 namespace 设置上下文</span></span><br><span class="line">$ kubectl<span class="built_in"> config </span>set-context gce <span class="attribute">--user</span>=cluster-admin <span class="attribute">--namespace</span>=foo \</span><br><span class="line">  &amp;&amp; kubectl<span class="built_in"> config </span>use-context gce</span><br></pre></td></tr></table></figure>
+<h3 id="创建对象"><a href="#创建对象" class="headerlink" title="创建对象"></a>创建对象</h3><p>Kubernetes 的清单文件可以使用 json 或 yaml 格式定义。可以以 .yaml、.yml、或者 .json 为扩展名。<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="bullet">-f</span> <span class="string">./my-manifest.yaml</span>           <span class="comment"># 创建资源</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="bullet">-f</span> <span class="string">./my1.yaml</span> <span class="bullet">-f</span> <span class="string">./my2.yaml</span>     <span class="comment"># 使用多个文件创建资源</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="bullet">-f</span> <span class="string">./dir</span>                        <span class="comment"># 使用目录下的所有清单文件来创建资源</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="bullet">-f</span> <span class="attr">https://git.io/vPieo</span>         <span class="comment"># 使用 url 来创建资源</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">run</span> <span class="string">nginx</span> <span class="bullet">--image=nginx</span>                <span class="comment"># 启动一个 nginx 实例</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">explain</span> <span class="string">pods,svc</span>                       <span class="comment"># 获取 pod 和 svc 的文档</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 从 stdin 输入中创建多个 YAML 对象</span></span><br><span class="line"><span class="string">$</span> <span class="string">cat</span> <span class="string">&lt;&lt;EOF</span> <span class="string">| kubectl create -f -</span></span><br><span class="line"><span class="string"></span><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">busybox-sleep</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">sleep</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">"1000000"</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">busybox-sleep-less</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">sleep</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">"1000"</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建包含几个 key 的 Secret</span></span><br><span class="line"><span class="string">$</span> <span class="string">cat</span> <span class="string">&lt;&lt;EOF</span> <span class="string">| kubectl create -f -</span></span><br><span class="line"><span class="string"></span><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Secret</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">mysecret</span></span><br><span class="line"><span class="attr">type:</span> <span class="string">Opaque</span></span><br><span class="line"><span class="attr">data:</span></span><br><span class="line"><span class="attr">  password:</span> <span class="string">$(echo</span> <span class="string">"s33msi4"</span> <span class="string">| base64)</span></span><br><span class="line"><span class="string"></span><span class="attr">  username:</span> <span class="string">$(echo</span> <span class="string">"jane"</span> <span class="string">| base64)</span></span><br><span class="line"><span class="string">EOF</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="显示和查找资源"><a href="#显示和查找资源" class="headerlink" title="显示和查找资源"></a>显示和查找资源</h3><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Get commands with basic output</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> services                          <span class="comment"># 列出所有 namespace 中的所有 service</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods <span class="comment">--all-namespaces             # 列出所有 namespace 中的所有 pod</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods -o wide                      <span class="comment"># 列出所有 pod 并显示详细信息</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> deployment <span class="keyword">my</span>-dep                 <span class="comment"># 列出指定 deployment</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods <span class="comment">--include-uninitialized      # 列出该 namespace 中的所有 pod 包括未初始化的</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用详细输出来描述命令</span></span><br><span class="line">$ kubectl describe nodes <span class="keyword">my</span>-node</span><br><span class="line">$ kubectl describe pods <span class="keyword">my</span>-pod</span><br><span class="line"></span><br><span class="line">$ kubectl <span class="keyword">get</span> services <span class="comment">--sort-by=.metadata.name # List Services Sorted by Name</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据重启次数排序列出 pod</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods <span class="comment">--sort-by='.status.containerStatuses[0].restartCount'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取所有具有 app=cassandra 的 pod 中的 version 标签</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods <span class="comment">--selector=app=cassandra rc -o \</span></span><br><span class="line">  jsonpath='&#123;.items[*].metadata.labels.<span class="built_in">version</span>&#125;'</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取所有节点的 ExternalIP</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> nodes -o jsonpath='&#123;.items[*].status.addresses[?(@.type==<span class="string">"ExternalIP"</span>)].address&#125;'</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出属于某个 PC 的 Pod 的名字</span></span><br><span class="line"><span class="comment"># “jq”命令用于转换复杂的 jsonpath，参考 https://stedolan.github.io/jq/</span></span><br><span class="line">$ sel=$&#123;$(kubectl <span class="keyword">get</span> rc <span class="keyword">my</span>-rc <span class="comment">--output=json | jq -j '.spec.selector | to_entries | .[] | "\(.key)=\(.value),"')%?&#125;</span></span><br><span class="line">$ echo $(kubectl <span class="keyword">get</span> pods <span class="comment">--selector=$sel --output=jsonpath=&#123;.items..metadata.name&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看哪些节点已就绪</span></span><br><span class="line">$ JSONPATH='&#123;range .items[*]&#125;&#123;@.metadata.<span class="built_in">name</span>&#125;:&#123;range @.status.conditions[*]&#125;&#123;@.type&#125;=&#123;@.status&#125;;&#123;<span class="keyword">end</span>&#125;&#123;<span class="keyword">end</span>&#125;' \</span><br><span class="line"> &amp;&amp; kubectl <span class="keyword">get</span> nodes -o jsonpath=<span class="string">"$JSONPATH"</span> | grep <span class="string">"Ready=True"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出当前 Pod 中使用的 Secret</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pods -o json | jq '.items[].spec.containers[].env[]?.valueFrom.secretKeyRef.<span class="built_in">name</span>' | grep -v null | sort | uniq</span><br></pre></td></tr></table></figure>
+<h3 id="更新资源"><a href="#更新资源" class="headerlink" title="更新资源"></a>更新资源</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl rolling-<span class="keyword">update</span> frontend-v1 -f frontend-v2.json           <span class="comment"># 滚动更新 pod frontend-v1</span></span><br><span class="line">$ kubectl <span class="keyword">rolling</span>-<span class="keyword">update</span> frontend-v1 frontend-v2 <span class="comment">--image=image:v2  # 更新资源名称并更新镜像</span></span><br><span class="line">$ kubectl <span class="keyword">rolling</span>-<span class="keyword">update</span> frontend <span class="comment">--image=image:v2                 # 更新 frontend pod 中的镜像</span></span><br><span class="line">$ kubectl <span class="keyword">rolling</span>-<span class="keyword">update</span> frontend-v1 frontend-v2 <span class="comment">--rollback        # 退出已存在的进行中的滚动更新</span></span><br><span class="line">$ cat pod.json | kubectl <span class="keyword">replace</span> -f -                              <span class="comment"># 基于 stdin 输入的 JSON 替换 pod</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 强制替换，删除后重新创建资源。会导致服务中断。</span></span><br><span class="line">$ kubectl <span class="keyword">replace</span> <span class="comment">--force -f ./pod.json</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 为 nginx RC 创建服务，启用本地 80 端口连接到容器上的 8000 端口</span></span><br><span class="line">$ kubectl expose rc nginx <span class="comment">--port=80 --target-port=8000</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新单容器 pod 的镜像版本（tag）到 v4</span></span><br><span class="line">$ kubectl <span class="keyword">get</span> pod mypod -o yaml | sed <span class="string">'s/\(image: myimage\):.*$/\1:v4/'</span> | kubectl <span class="keyword">replace</span> -f -</span><br><span class="line"></span><br><span class="line">$ kubectl label pods my-pod <span class="keyword">new</span>-label=awesome                      <span class="comment"># 添加标签</span></span><br><span class="line">$ kubectl annotate pods my-pod icon-<span class="keyword">url</span>=<span class="keyword">http</span>://goo.gl/XXBTWq       <span class="comment"># 添加注解</span></span><br><span class="line">$ kubectl autoscale deployment foo <span class="comment">--min=2 --max=10                # 自动扩展 deployment “foo”</span></span><br></pre></td></tr></table></figure>
+<h3 id="修补资源"><a href="#修补资源" class="headerlink" title="修补资源"></a>修补资源</h3><p>使用策略合并补丁并修补资源。</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl patch <span class="keyword">node</span> <span class="title">k8s-node-1</span> -p '&#123;<span class="string">"spec"</span>:&#123;<span class="string">"unschedulable"</span>:<span class="literal">true</span>&#125;&#125;' <span class="comment"># 部分更新节点</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新容器镜像； spec.containers[*].name 是必须的，因为这是合并的关键字</span></span><br><span class="line">$ kubectl patch pod valid-pod -p '&#123;<span class="string">"spec"</span>:&#123;<span class="string">"containers"</span>:[&#123;<span class="string">"name"</span>:<span class="string">"kubernetes-serve-hostname"</span>,<span class="string">"image"</span>:<span class="string">"new image"</span>&#125;]&#125;&#125;'</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用具有位置数组的 json 补丁更新容器镜像</span></span><br><span class="line">$ kubectl patch pod valid-pod --<span class="attr">type=</span>'json' -p='[&#123;<span class="string">"op"</span>: <span class="string">"replace"</span>, <span class="string">"path"</span>: <span class="string">"/spec/containers/0/image"</span>, <span class="string">"value"</span>:<span class="string">"new image"</span>&#125;]'</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用具有位置数组的 json 补丁禁用 deployment 的 livenessProbe</span></span><br><span class="line">$ kubectl patch deployment valid-deployment  --<span class="keyword">type</span> json   -p='[&#123;<span class="string">"op"</span>: <span class="string">"remove"</span>, <span class="string">"path"</span>: <span class="string">"/spec/template/spec/containers/0/livenessProbe"</span>&#125;]'</span><br></pre></td></tr></table></figure>
+<h3 id="编辑资源"><a href="#编辑资源" class="headerlink" title="编辑资源"></a>编辑资源</h3><p>在编辑器中编辑任何 API 资源。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl <span class="builtin-name">edit</span> svc/docker-registry                      # 编辑名为 docker-registry 的 service</span><br><span class="line">$ <span class="attribute">KUBE_EDITOR</span>=<span class="string">"nano"</span> kubectl <span class="builtin-name">edit</span> svc/docker-registry   # 使用其它编辑器</span><br></pre></td></tr></table></figure></p>
+<h3 id="Scale-资源"><a href="#Scale-资源" class="headerlink" title="Scale 资源"></a>Scale 资源</h3><figure class="highlight dsconfig"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="string">kubectl </span><span class="string">scale </span><span class="built_in">--replicas=3</span> <span class="string">rs/</span><span class="string">foo </span>                                <span class="comment"># Scale a replicaset named 'foo' to 3</span></span><br><span class="line">$ <span class="string">kubectl </span><span class="string">scale </span><span class="built_in">--replicas=3</span> -f <span class="string">foo.</span><span class="string">yaml </span>                           <span class="comment"># Scale a resource specified in "foo.yaml" to 3</span></span><br><span class="line">$ <span class="string">kubectl </span><span class="string">scale </span><span class="built_in">--current-replicas=2</span> <span class="built_in">--replicas=3</span> <span class="string">deployment/</span><span class="string">mysql </span> <span class="comment"># If the deployment named mysql's current size is 2, scale mysql to 3</span></span><br><span class="line">$ <span class="string">kubectl </span><span class="string">scale </span><span class="built_in">--replicas=5</span> <span class="string">rc/</span><span class="string">foo </span><span class="string">rc/</span><span class="string">bar </span><span class="string">rc/</span><span class="string">baz </span>                  <span class="comment"># Scale multiple replication controllers</span></span><br></pre></td></tr></table></figure>
+<h3 id="删除资源"><a href="#删除资源" class="headerlink" title="删除资源"></a>删除资源</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl delete -f ./pod.json                                              # 删除 pod.json 文件中定义的类型和名称的 pod</span><br><span class="line">$ kubectl delete pod,service baz foo                                        # 删除名为“baz”的 pod 和名为“foo”的 service</span><br><span class="line">$ kubectl delete pods,services -l <span class="attribute">name</span>=myLabel                              # 删除具有 <span class="attribute">name</span>=myLabel 标签的 pod 和 serivce</span><br><span class="line">$ kubectl delete pods,services -l <span class="attribute">name</span>=myLabel --include-uninitialized      # 删除具有 <span class="attribute">name</span>=myLabel 标签的 pod 和 service，包括尚未初始化的</span><br><span class="line">$ kubectl -n my-ns delete po,svc --all                                      # 删除 my-ns namespace 下的所有 pod 和 serivce，包括尚未初始化的</span><br></pre></td></tr></table></figure>
+<h3 id="与运行中的-Pod-交互"><a href="#与运行中的-Pod-交互" class="headerlink" title="与运行中的 Pod 交互"></a>与运行中的 Pod 交互</h3><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl logs <span class="keyword">my</span>-pod                                 <span class="comment"># dump 输出 pod 的日志（stdout）</span></span><br><span class="line">$ kubectl logs <span class="keyword">my</span>-pod -c <span class="keyword">my</span>-container                 <span class="comment"># dump 输出 pod 中容器的日志（stdout，pod 中有多个容器的情况下使用）</span></span><br><span class="line">$ kubectl logs -f <span class="keyword">my</span>-pod                              <span class="comment"># 流式输出 pod 的日志（stdout）</span></span><br><span class="line">$ kubectl logs -f <span class="keyword">my</span>-pod -c <span class="keyword">my</span>-container              <span class="comment"># 流式输出 pod 中容器的日志（stdout，pod 中有多个容器的情况下使用）</span></span><br><span class="line">$ kubectl run -i --tty busybox --image=busybox -- sh  <span class="comment"># 交互式 shell 的方式运行 pod</span></span><br><span class="line">$ kubectl attach <span class="keyword">my</span>-pod -i                            <span class="comment"># 连接到运行中的容器</span></span><br><span class="line">$ kubectl port-forward <span class="keyword">my</span>-pod <span class="number">5000</span>:<span class="number">6000</span>               <span class="comment"># 转发 pod 中的 6000 端口到本地的 5000 端口</span></span><br><span class="line">$ kubectl <span class="keyword">exec</span> <span class="keyword">my</span>-pod -- ls /                         <span class="comment"># 在已存在的容器中执行命令（只有一个容器的情况下）</span></span><br><span class="line">$ kubectl <span class="keyword">exec</span> <span class="keyword">my</span>-pod -c <span class="keyword">my</span>-container -- ls /         <span class="comment"># 在已存在的容器中执行命令（pod 中有多个容器的情况下）</span></span><br><span class="line">$ kubectl top pod POD_NAME --containers               <span class="comment"># 显示指定 pod 和容器的指标度量</span></span><br></pre></td></tr></table></figure>
+<h3 id="与节点和集群交互"><a href="#与节点和集群交互" class="headerlink" title="与节点和集群交互"></a>与节点和集群交互</h3><figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl cordon my-<span class="keyword">node</span>                                                <span class="title"># 标记 my-node</span> 不可调度</span><br><span class="line">$ kubectl drain my-<span class="keyword">node</span>                                                 <span class="title"># 清空 my-node</span> 以待维护</span><br><span class="line">$ kubectl uncordon my-<span class="keyword">node</span>                                              <span class="title"># 标记 my-node</span> 可调度</span><br><span class="line">$ kubectl top <span class="keyword">node</span> <span class="title">my-node</span>                                              <span class="comment"># 显示 my-node 的指标度量</span></span><br><span class="line">$ kubectl cluster<span class="literal">-inf</span>o                                                  <span class="comment"># 显示 master 和服务的地址</span></span><br><span class="line">$ kubectl cluster<span class="literal">-inf</span>o dump                                             <span class="comment"># 将当前集群状态输出到 stdout                                    </span></span><br><span class="line">$ kubectl cluster<span class="literal">-inf</span>o dump --<span class="attr">output-directory=</span>/path/to/cluster-state   <span class="comment"># 将当前集群状态输出到 /path/to/cluster-state</span></span><br><span class="line"><span class="comment"># 如果该键和影响的污点（taint）已存在，则使用指定的值替换</span></span><br><span class="line">$ kubectl taint nodes foo <span class="attr">dedicated=</span>special-user:NoSchedule</span><br></pre></td></tr></table></figure>
+<h3 id="资源类型"><a href="#资源类型" class="headerlink" title="资源类型"></a>资源类型</h3><p>下表列出的是 kubernetes 中所有支持的类型和缩写的别名。</p>
+<table>
+<thead>
+<tr>
+<th>资源类型</th>
+<th>缩写别名</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clusters</td>
+<td></td>
+</tr>
+<tr>
+<td>componentstatuses</td>
+<td>cs</td>
+</tr>
+<tr>
+<td>configmaps</td>
+<td>cm</td>
+</tr>
+<tr>
+<td>daemonsets</td>
+<td>ds</td>
+</tr>
+<tr>
+<td>deployments</td>
+<td>deploy</td>
+</tr>
+<tr>
+<td>endpoints</td>
+<td>ep</td>
+</tr>
+<tr>
+<td>event</td>
+<td>ev</td>
+</tr>
+<tr>
+<td>horizontalpodautoscalers</td>
+<td>hpa</td>
+</tr>
+<tr>
+<td>ingresses</td>
+<td>ing</td>
+</tr>
+<tr>
+<td>jobs</td>
+<td></td>
+</tr>
+<tr>
+<td>limitranges</td>
+<td>limits</td>
+</tr>
+<tr>
+<td>namespaces</td>
+<td>ns</td>
+</tr>
+<tr>
+<td>networkpolicies</td>
+<td></td>
+</tr>
+<tr>
+<td>nodes</td>
+<td>no</td>
+</tr>
+<tr>
+<td>statefulsets</td>
+<td></td>
+</tr>
+<tr>
+<td>persistentvolumeclaims</td>
+<td>pvc</td>
+</tr>
+<tr>
+<td>persistentvolumes</td>
+<td>pv</td>
+</tr>
+<tr>
+<td>pods</td>
+<td>po</td>
+</tr>
+<tr>
+<td>podsecuritypolicies</td>
+<td>psp</td>
+</tr>
+<tr>
+<td>podtemplates</td>
+</tr>
+<tr>
+<td>replicasets</td>
+<td>rs</td>
+</tr>
+<tr>
+<td>replicationcontrollers</td>
+<td>rc</td>
+</tr>
+<tr>
+<td>resourcequotas</td>
+<td>quota</td>
+</tr>
+<tr>
+<td>cronjob</td>
+</tr>
+<tr>
+<td>secrets</td>
+</tr>
+<tr>
+<td>serviceaccount</td>
+<td>sa</td>
+</tr>
+<tr>
+<td>services</td>
+<td>svc</td>
+</tr>
+<tr>
+<td>storageclasses</td>
+</tr>
+<tr>
+<td>thirdpartyresources</td>
+</tr>
+</tbody>
+</table>
+<h3 id="格式化输出"><a href="#格式化输出" class="headerlink" title="格式化输出"></a>格式化输出</h3><p>要以特定的格式向终端窗口输出详细信息，可以在 kubectl 命令中添加 -o 或者 -output 标志。</p>
+<table>
+<thead>
+<tr>
+<th>输出格式</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-o=custom-columns=<spec></spec></td>
+<td>使用逗号分隔的自定义列列表打印表格</td>
+</tr>
+<tr>
+<td>-o=custom-columns-file=<filename></filename></td>
+<td>使用 文件中的自定义列模板打印表格</td>
+</tr>
+<tr>
+<td>-o=json</td>
+<td>输出 JSON 格式的 API 对象</td>
+</tr>
+<tr>
+<td>-o=jsonpath-file=’filename’</td>
+<td>打印 jsonpath 表达式中定义的字段</td>
+</tr>
+<tr>
+<td>-o=jsonpath-file=’filename’</td>
+<td>打印由 文件中的 jsonpath 表达式定义的字段</td>
+</tr>
+<tr>
+<td>-o=name</td>
+<td>仅打印资源名称</td>
+</tr>
+<tr>
+<td>-o=wide</td>
+<td>以纯文本格式输出任何附加信息，对于 Pod ，包含节点名称</td>
+</tr>
+<tr>
+<td>-o=yaml</td>
+<td>输出 YAML 格式的 API 对象</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Kubectl-详细输出和调试"><a href="#Kubectl-详细输出和调试" class="headerlink" title="Kubectl 详细输出和调试"></a>Kubectl 详细输出和调试</h3><p>使用 -v 或 –v 标志跟着一个整数来指定日志级别。这里 描述了通用的 kubernetes 日志约定和相关的日志级别。</p>
+<table>
+<thead>
+<tr>
+<th>详细等级</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>–v=0</td>
+<td>总是对操作人员可见。</td>
+</tr>
+<tr>
+<td>–v=1</td>
+<td>合理的默认日志级别，如果您不需要详细输出。</td>
+</tr>
+<tr>
+<td>–v=2</td>
+<td>可能与系统的重大变化相关的，有关稳定状态的信息和重要的日志信息。这是对大多数系统推荐的日志级别。</td>
+</tr>
+<tr>
+<td>–v=3</td>
+<td>有关更改的扩展信息。</td>
+</tr>
+<tr>
+<td>–v=4</td>
+<td>调试级别详细输出。</td>
+</tr>
+<tr>
+<td>–v=6</td>
+<td>显示请求的资源。</td>
+</tr>
+<tr>
+<td>–v=7</td>
+<td>显示HTTP请求的header。</td>
+</tr>
+<tr>
+<td>–v=8</td>
+<td>显示HTTP请求的内容。</td>
+</tr>
+</tbody>
+</table>
+</div></header><footer class="post__foot u-cf"><ul class="post__tag u-fl"><li class="post__tag__item"><a class="post__tag__link" href="/tags/k8s-kubectl/">k8s kubectl</a></li></ul></footer></article><section class="reward"><a class="btn-reward" href="#">打赏</a><div class="reward-wrapper clearfix"><img src="/img/wechat20.png" title="微信"></div></section></main><footer class="foot"><div class="foot-copy">&copy; 2016 - 2019 Willie Lin</div></footer><script src="/js/scroller.js"></script><script src="/js/main.js"></script></body></html>
