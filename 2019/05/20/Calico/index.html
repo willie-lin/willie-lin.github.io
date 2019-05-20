@@ -25,44 +25,9 @@
 <p>更详细的自定义配置方法见 <a href="https://docs.projectcalico.org/v3.0/getting-started/kubernetes" target="_blank" rel="noopener">https://docs.projectcalico.org/v3.0/getting-started/kubernetes</a>。</p>
 <p>这会在 Pod 中启动 Calico-etcd，在所有 Node 上启动 bird6、felix 以及 confd，并配置 CNI 网络为 calico 插件：</p>
 <figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Calico 相关进程</span></span><br><span class="line">$ ps -ef | grep calico | grep -v grep</span><br><span class="line">root      9012  8995  0 14:51 ?        00:00:00 /bin/sh -c /usr/local/bin/etcd <span class="attribute">--name</span>=calico <span class="attribute">--data-dir</span>=/var/etcd/calico-data <span class="attribute">--advertise-client-urls</span>=http://$CALICO_ETCD_IP:6666 <span class="attribute">--listen-client-urls</span>=http://0.0.0.0:6666 <span class="attribute">--listen-peer-urls</span>=http://0.0.0.0:6667</span><br><span class="line">root      9038  9012  0 14:51 ?        00:00:01 /usr/local/bin/etcd <span class="attribute">--name</span>=calico <span class="attribute">--data-dir</span>=/var/etcd/calico-data <span class="attribute">--advertise-client-urls</span>=http://10.146.0.2:6666 <span class="attribute">--listen-client-urls</span>=http://0.0.0.0:6666 <span class="attribute">--listen-peer-urls</span>=http://0.0.0.0:6667</span><br><span class="line">root      9326  9325  0 14:51 ?        00:00:00 bird6 -R -s /var/run/calico/bird6.ctl -d -c /etc/calico/confd/config/bird6.cfg</span><br><span class="line">root      9327  9322  0 14:51 ?        00:00:00 confd <span class="attribute">-confdir</span>=/etc/calico/confd <span class="attribute">-interval</span>=5 -watch <span class="attribute">--log-level</span>=debug <span class="attribute">-node</span>=http://10.96.232.136:6666 -client-key= -client-cert= -client-ca-keys=</span><br><span class="line">root      9328  9324  0 14:51 ?        00:00:00 bird -R -s /var/run/calico/bird.ctl -d -c /etc/calico/confd/config/bird.cfg</span><br><span class="line">root      9329  9323  1 14:51 ?        00:00:04 calico-felix</span><br></pre></td></tr></table></figure>
-<pre><code># CNI 网络插件配置
-$ cat /etc/cni/net.d/10-calico.conf
-{
-    &quot;name&quot;: &quot;k8s-pod-network&quot;,
-    &quot;cniVersion&quot;: &quot;0.1.0&quot;,
-    &quot;type&quot;: &quot;calico&quot;,
-    &quot;etcd_endpoints&quot;: &quot;http://10.96.232.136:6666&quot;,
-    &quot;log_level&quot;: &quot;info&quot;,
-    &quot;ipam&quot;: {
-            &quot;type&quot;: &quot;calico-ipam&quot;
-        },
-    &quot;policy&quot;: {
-            &quot;type&quot;: &quot;k8s&quot;,
-             &quot;k8s_api_root&quot;: &quot;https://10.96.0.1:443&quot;,
-             &quot;k8s_auth_token&quot;: &quot;&lt;token&gt;&quot;
-        },
-    &quot;kubernetes&quot;: {
-            &quot;kubeconfig&quot;: &quot;/etc/cni/net.d/calico-kubeconfig&quot;
-        }
-}
-
-$ cat /etc/cni/net.d/calico-kubeconfig
-# Kubeconfig file for Calico CNI plugin.
-apiVersion: v1
-kind: Config
-clusters:
-- name: local
-        cluster:
-     insecure-skip-tls-verify: true
-users:
-- name: calico
-contexts:
-- name: calico-context
-      context:
-      cluster: local
-      user: calico
- current-context: calico-context
-</code></pre><p><img src="https://raw.githubusercontent.com/Willie-lin/Hexo-Blog-Picture/master/calico/calico-flow3.png" alt="calico-flow"></p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CNI 网络插件配置</span></span><br><span class="line">$ cat <span class="regexp">/etc/</span>cni<span class="regexp">/net.d/</span><span class="number">10</span>-calico.conf</span><br><span class="line">&#123;</span><br><span class="line">	<span class="string">"name"</span>: <span class="string">"k8s-pod-network"</span>,</span><br><span class="line">   	<span class="string">"cniVersion"</span>: <span class="string">"0.1.0"</span>,</span><br><span class="line">   	<span class="string">"type"</span>: <span class="string">"calico"</span>,</span><br><span class="line">   	<span class="string">"etcd_endpoints"</span>: <span class="string">"http://10.96.232.136:6666"</span>,</span><br><span class="line">   	<span class="string">"log_level"</span>: <span class="string">"info"</span>,</span><br><span class="line">   	<span class="string">"ipam"</span>: &#123;</span><br><span class="line">       		<span class="string">"type"</span>: <span class="string">"calico-ipam"</span></span><br><span class="line">   		&#125;,</span><br><span class="line">	<span class="string">"policy"</span>: &#123;</span><br><span class="line">       		<span class="string">"type"</span>: <span class="string">"k8s"</span>,</span><br><span class="line">        		<span class="string">"k8s_api_root"</span>: <span class="string">"https://10.96.0.1:443"</span>,</span><br><span class="line">        		<span class="string">"k8s_auth_token"</span>: <span class="string">"&lt;token&gt;"</span></span><br><span class="line">   		&#125;,</span><br><span class="line">   	<span class="string">"kubernetes"</span>: &#123;</span><br><span class="line">       		<span class="string">"kubeconfig"</span>: <span class="string">"/etc/cni/net.d/calico-kubeconfig"</span></span><br><span class="line">	    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">cat</span> <span class="string">/etc/cni/net.d/calico-kubeconfig</span></span><br><span class="line"><span class="comment"># Kubeconfig file for Calico CNI plugin.</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Config</span></span><br><span class="line"><span class="attr">clusters:</span></span><br><span class="line"><span class="attr">- name:</span> <span class="string">local</span></span><br><span class="line"> 	      <span class="attr">cluster:</span></span><br><span class="line">   	 <span class="attr">insecure-skip-tls-verify:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">users:</span></span><br><span class="line"><span class="attr">   - name:</span> <span class="string">calico</span></span><br><span class="line"><span class="attr">contexts:</span></span><br><span class="line"><span class="attr">- name:</span> <span class="string">calico-context</span></span><br><span class="line"> 	    <span class="attr">context:</span></span><br><span class="line">   	  <span class="attr">cluster:</span> <span class="string">local</span></span><br><span class="line">   	  <span class="attr">user:</span> <span class="string">calico</span></span><br><span class="line"><span class="attr"> current-context:</span> <span class="string">calico-context</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://raw.githubusercontent.com/Willie-lin/Hexo-Blog-Picture/master/calico/calico-flow3.png" alt="calico-flow"></p>
 <h2 id="Calico-的不足"><a href="#Calico-的不足" class="headerlink" title="Calico 的不足"></a>Calico 的不足</h2><ol>
 <li>既然是三层实现，当然不支持 VRF</li>
 <li>不支持多租户网络的隔离功能，在多租户场景下会有网络安全问题</li>
